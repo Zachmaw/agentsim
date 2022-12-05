@@ -1,16 +1,13 @@
-# V Preinfdevidfk0.1
+# V Preinfdev0.3
 # 
 # # physicalTraits = [
+#       brainWiring: list of neuralConnections
 #       brain_startingConnections: int,
-#       sizeDeviation: float(0-1)?,# give/take up to 3
 #       eggSize: int,
+#       eggshellThickness: int
 #       yolkEnergy: int,
+#       size: int
 #       so on...
-# genes are entirely phisical?
-# but so are brains, tho. okay.
-# brains need to be passed genetically
-# so genes are split in 2
-# genes = (brainWiring, phisicalTraits)
 
 import pygame
 from os import path
@@ -22,6 +19,14 @@ pauseToggle = False
 debugHUDtoggle = False
 godMenuToggle = False
 mainLoop = True
+
+# counters
+simRuntime = 0
+simEnergy = 0
+
+all_sprites = pygame.sprite.Group()
+agents = pygame.sprite.Group()
+foods = pygame.sprite.Group()
 
 WIDTH = 480
 HEIGHT = 600
@@ -39,7 +44,6 @@ YELLOW = (255, 255, 0)
 pygame.init()
 # pygame.mixer.init()
 debugFont = pygame.font.SysFont("monospace", 15)
-simRuntime = 0
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("AgentSim")
 clock = pygame.time.Clock()
@@ -71,24 +75,25 @@ class Agent(pygame.sprite.Sprite):
         self.brain = genes[0]
         self.traits = genes[1]
         
-        self.radius = 8
+        self.radius = self.traits[4]*3
         self.image = pygame.Surface((self.radius*2, self.radius*2))
         
+        self.rect = self.image.get_rect()
         pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
         self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        print("new Agent rect is :"+str(self.rect))
         self.rect.center = pos
+        print("new Agent rect is :"+str(self.rect)+" and "+str(self.rect.center))
         self.speedx = 0
         self.speedy = 0
 
     def layEgg(self):
-        newEgg = Egg(self.genes, self.eggSizeFactor)
+        # determine size from self.traits
+
+        newEgg = Egg(self.genes, self.eggSizeFactor, self.rect.center, )
         all_sprites.add(newEgg)
 
     def die(self):
         pass
-
 
     def bounce(self, axis:str):
         if axis == "x":
@@ -96,40 +101,57 @@ class Agent(pygame.sprite.Sprite):
         elif axis == "y":
             self.speedy *= -1
 
+    def update(self):
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
+
 class Egg(pygame.sprite.Sprite):
     def __init__(self, genes, size, pos, yolk):
         pygame.sprite.Sprite.__init__(self)
         self.brain = genes[0]
-        self.traits = genes[1]
+        self.traits = genes[1:]
         self.radius = size
         # based on size, determines max posible yolk energy storage. volumetric rounded and reduced by an amount dictated by other factors.... I'm so tired.
         self.energy = yolk# I have none.
+        self.hullStrength = 
 
         self.image = pygame.Surface((self.radius*2, self.radius*2))
+        self.rect = self.image.get_rect()
         pygame.draw.circle(self.image, WHITE, self.rect.center, self.radius)
         self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
         print("new Agent rect is :"+str(self.rect))
         self.rect.center = pos
         self.speedx = 0
         self.speedy = 0
 
+    def update(self):
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
+    
+    def mature(self):
+        pass
 
+    def hatch(self):
+        pass
 
 class Food(pygame.sprite.Sprite):
     def __init__(self, pos):
-        super().__init__(self)
+        pygame.sprite.Sprite.__init__(self)
         self.radius = 1
         self.image = pygame.Surface((self.radius*2, self.radius*2))
-        pygame.draw.circle(self.image, GREEN, self.rect.center, self.radius)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
-        print("new food pellet spawned")
+        pygame.draw.circle(self.image, GREEN, self.rect.center, self.radius)
+        print("new food pellet spawned at "+str(pos))
         self.rect.center = pos
         self.speedx = 0
         self.speedy = 0
 
         self.energy = 1
+
+    def update(self):
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
         
 
 
@@ -137,10 +159,10 @@ class Food(pygame.sprite.Sprite):
 # class Player(pygame.sprite.Sprite):
 #     def update(self):
 #         self.speedx = 0
-#         keystate = pygame.key.get_pressed()
-#         if keystate[pygame.K_LEFT] or keystate[pygame.K_a]:
+
+
 #             self.speedx = -5
-#         if keystate[pygame.K_RIGHT] or keystate[pygame.K_d]:
+
 #             self.speedx = 5
 #         self.rect.x += self.speedx
 #         if self.rect.right > WIDTH - 4:
@@ -158,12 +180,6 @@ class Food(pygame.sprite.Sprite):
 # for img in mob_list:
 #     mob_images.append(pygame.image.load(path.join(img_dir, img)).convert())
 
-all_sprites = pygame.sprite.Group()
-agents = pygame.sprite.Group()
-foods = pygame.sprite.Group()
-# for i in range(8):        # repeat 8 times
-#     m = Mob()             # instantiate class
-#     all_sprites.add(m)    # add instance to group
 
 # Game loop
 running = True
@@ -177,10 +193,14 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mousePos = pygame.mouse.get_pos()
             print(mousePos)
-            if any(shiftKeys):
-                pass# spawn an Agent
-            else:
-                pass# spawn a food
+            if any(shiftKeys):### spawn an Agent
+
+                pass
+            else:# spawn a food
+                tempFoodVar = Food(mousePos)
+                all_sprites.add(tempFoodVar)
+                foods.add(tempFoodVar)
+                simEnergy += 1
         elif event.type == pygame.KEYDOWN:
             # if event.key == pygame.K_w or event.key == pygame.K_UP:
             #     pass
@@ -204,7 +224,7 @@ while running:
         simRuntime += 1
 
     # Render
-    DebugText = f"Simulation Runtime: {simRuntime}\nLiving Agents: {len(all_sprites.sprites())}"
+    DebugText = f"Simulation Runtime: {simRuntime}\nNutrient Pellets: {len(foods.sprites())}\nLiving Agents: {len(agents.sprites())}\nSimulation Energy:{simEnergy}"
     screen.fill(BLACK)
     all_sprites.draw(screen)
     if debugHUDtoggle:
