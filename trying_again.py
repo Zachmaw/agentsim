@@ -28,8 +28,11 @@ all_sprites = pygame.sprite.Group()
 agents = pygame.sprite.Group()
 foods = pygame.sprite.Group()
 
-WIDTH = 480
-HEIGHT = 600
+cellSize = 32
+gridWidth = 10
+gridHeight = 10
+WIDTH = cellSize * gridWidth
+HEIGHT = cellSize * gridHeight
 FPS = 60
 
 # define colors
@@ -112,8 +115,8 @@ class Egg(pygame.sprite.Sprite):
         self.traits = genes[1:]
         self.radius = size
         # based on size, determines max posible yolk energy storage. volumetric rounded and reduced by an amount dictated by other factors.... I'm so tired.
-        self.energy = yolk# I have none.
-        self.hullStrength = 
+        self.yolk = yolk# I have none.
+        self.hullStrength = self.traits[2] * 12
 
         self.image = pygame.Surface((self.radius*2, self.radius*2))
         self.rect = self.image.get_rect()
@@ -154,6 +157,11 @@ class Food(pygame.sprite.Sprite):
         self.rect.y += self.speedy
         
 
+background = pygame.Surface(screen.get_rect())
+background.fill(BLACK)
+for x in range(0, 8, 2):
+    for y in range(0, 8, 2):
+        pygame.draw.rect(background, (0,0,0), (x*size, y*size, size, size))
 
 
 # class Player(pygame.sprite.Sprite):
