@@ -14,10 +14,46 @@ from os import path
 
 img_dir = path.join(path.dirname(__file__), 'img')
 
+# Got this incredibly helpful function from https://stackoverflow.com/questions/42014195/rendering-text-with-multiple-lines-in-pygame
+def blit_text(surface, text, pos, font, color=pygame.Color("black")):
+    words = [word.split(" ") for word in text.splitlines()]  # 2D array where each row is a list of words.
+    space = font.size(" ")[0]  # The width of a space.
+    max_width, max_height = surface.get_size()
+    x, y = pos
+    for line in words:
+        for word in line:
+            word_surface = font.render(word, 0, color)
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:
+                x = pos[0]  # Reset the x.
+                y += word_height  # Start on new row.
+            surface.blit(word_surface, (x, y))
+            x += word_width + space
+        x = pos[0]  # Reset the x.
+        y += word_height  # Start on new row.
+        if y >= max_height + word_height / 2:# my edit started here
+            print("Not all debug text could be displayed...")
+
+def buildBackdrop(size:"pygame.surface._Coordinate"):
+    def flipColor(colorState, colorA:"tuple[int,int,int]", colorB:"tuple[int,int,int]"):
+        if not colorState or colorState == colorA:
+            colorState = colorB
+        else: 
+            colorState = colorA
+        return colorState
+    c = None
+    backdrop = pygame.surface.Surface(size)
+    backdrop.fill(BLACK)
+    for y in range(0,HEIGHT,cellSize): 
+        c = flipColor(c, RED, BLACK)
+        for x in range(0,WIDTH,cellSize):
+            c = flipColor(c, RED, BLACK)
+            pygame.draw.rect(backdrop, c, pygame.Rect(x, y, x+cellSize, y+cellSize))
+    return backdrop
+
 # Switches
 pauseToggle = False
 debugHUDtoggle = False
-godMenuToggle = False
 mainLoop = True
 
 # counters
@@ -50,33 +86,14 @@ debugFont = pygame.font.SysFont("monospace", 15)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("AgentSim")
 clock = pygame.time.Clock()
-
-# Got this incredibly helpful function from https://stackoverflow.com/questions/42014195/rendering-text-with-multiple-lines-in-pygame
-def blit_text(surface, text, pos, font, color=pygame.Color("black")):
-    words = [word.split(" ") for word in text.splitlines()]  # 2D array where each row is a list of words.
-    space = font.size(" ")[0]  # The width of a space.
-    max_width, max_height = surface.get_size()
-    x, y = pos
-    for line in words:
-        for word in line:
-            word_surface = font.render(word, 0, color)
-            word_width, word_height = word_surface.get_size()
-            if x + word_width >= max_width:
-                x = pos[0]  # Reset the x.
-                y += word_height  # Start on new row.
-            surface.blit(word_surface, (x, y))
-            x += word_width + space
-        x = pos[0]  # Reset the x.
-        y += word_height  # Start on new row.
-        if y >= max_height + word_height / 2:# my edit started here
-            print("Not all debug text could be displayed...")
-
+background = buildBackdrop(screen.get_rect().size)
 # Classes
 class Agent(pygame.sprite.Sprite):
     def __init__(self, genes, pos):
         pygame.sprite.Sprite.__init__(self)
         self.brain = genes[0]
         self.traits = genes[1]
+        self.lifeStage = "Egg"#?
         
         self.radius = self.traits[4]*3
         self.image = pygame.Surface((self.radius*2, self.radius*2))
@@ -155,22 +172,11 @@ class Food(pygame.sprite.Sprite):
     def update(self):
         self.rect.x += self.speedx
         self.rect.y += self.speedy
-        
-
-background = pygame.Surface(screen.get_rect())
-background.fill(BLACK)
-for x in range(0, 8, 2):
-    for y in range(0, 8, 2):
-        pygame.draw.rect(background, (0,0,0), (x*size, y*size, size, size))
-
 
 # class Player(pygame.sprite.Sprite):
 #     def update(self):
 #         self.speedx = 0
-
-
 #             self.speedx = -5
-
 #             self.speedx = 5
 #         self.rect.x += self.speedx
 #         if self.rect.right > WIDTH - 4:
@@ -202,7 +208,6 @@ while running:
             mousePos = pygame.mouse.get_pos()
             print(mousePos)
             if any(shiftKeys):### spawn an Agent
-
                 pass
             else:# spawn a food
                 tempFoodVar = Food(mousePos)
@@ -223,19 +228,17 @@ while running:
                 else:
                     debugHUDtoggle = True
 
-
-
-
     # Update
     if not pauseToggle:
         all_sprites.update()
         simRuntime += 1
 
     # Render
-    DebugText = f"Simulation Runtime: {simRuntime}\nNutrient Pellets: {len(foods.sprites())}\nLiving Agents: {len(agents.sprites())}\nSimulation Energy:{simEnergy}"
     screen.fill(BLACK)
+    screen.blit(background, (0, 0))
     all_sprites.draw(screen)
     if debugHUDtoggle:
+        DebugText = f"Simulation Runtime: {simRuntime}\nNutrient Pellets: {len(foods.sprites())}\nLiving Agents: {len(agents.sprites())}\nSimulation Energy:{simEnergy}"
         blit_text(screen, DebugText, (20, 20), debugFont, color = pygame.Color("white"))
     pygame.display.flip()
 
