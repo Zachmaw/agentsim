@@ -8,6 +8,8 @@
 #       yolkEnergy: int,
 #       size: int
 #       so on...
+# 
+# lifeStages = ["egg", "hatchling", "mature", "elder"]
 
 import pygame
 from os import path
@@ -60,10 +62,6 @@ mainLoop = True
 simRuntime = 0
 simEnergy = 0
 
-all_sprites = pygame.sprite.Group()
-agents = pygame.sprite.Group()
-foods = pygame.sprite.Group()
-
 cellSize = 32
 gridWidth = 10
 gridHeight = 10
@@ -79,6 +77,7 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
+
 # initialize pygame and create window
 pygame.init()
 # pygame.mixer.init()
@@ -87,72 +86,90 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("AgentSim")
 clock = pygame.time.Clock()
 background = buildBackdrop(screen.get_rect().size)
+all_sprites = pygame.sprite.Group()
+agents = pygame.sprite.Group()
+foods = pygame.sprite.Group()
+
 # Classes
 class Agent(pygame.sprite.Sprite):
     def __init__(self, genes, pos):
         pygame.sprite.Sprite.__init__(self)
-        self.brain = genes[0]
+        self.brain = genes[0] 
         self.traits = genes[1]
-        self.lifeStage = "Egg"#?
+        self.lifeStage = 0
+        self.energy = 0
         
         self.radius = self.traits[4]*3
-        self.image = pygame.Surface((self.radius*2, self.radius*2))
+        self.image_orig = pygame.Surface((self.radius*2, self.radius*2))
+        self.image_orig.set_colorkey(BLACK)
+        self.image = self.image_orig.copy()
         
         self.rect = self.image.get_rect()
         pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
-        self.image.set_colorkey(BLACK)
         self.rect.center = pos
         print("new Agent rect is :"+str(self.rect)+" and "+str(self.rect.center))
         self.speedx = 0
         self.speedy = 0
-
-    def layEgg(self):
-        # determine size from self.traits
-
-        newEgg = Egg(self.genes, self.eggSizeFactor, self.rect.center, )
-        all_sprites.add(newEgg)
-
-    def die(self):
-        pass
-
-    def bounce(self, axis:str):
-        if axis == "x":
-            self.speedx *= -1
-        elif axis == "y":
-            self.speedy *= -1
+        self.rot_angle = 0
 
     def update(self):
         self.rect.x += self.speedx
         self.rect.y += self.speedy
 
-class Egg(pygame.sprite.Sprite):
-    def __init__(self, genes, size, pos, yolk):
-        pygame.sprite.Sprite.__init__(self)
-        self.brain = genes[0]
-        self.traits = genes[1:]
-        self.radius = size
-        # based on size, determines max posible yolk energy storage. volumetric rounded and reduced by an amount dictated by other factors.... I'm so tired.
-        self.yolk = yolk# I have none.
-        self.hullStrength = self.traits[2] * 12
+    def useEnergy(self, a):
+        energy_auditor = 0
+        numberCrunching = 
+        if numberCrunching < 0.695 and numberCrunching > 0.358:
+            energy_auditor += 1
 
-        self.image = pygame.Surface((self.radius*2, self.radius*2))
+    def rotate(self, rot_speed:"float"):
+        self.useEnergy(abs(rot_speed) % 1)
+        self.rot_angle = (self.rot_angle + rot_speed) % 360
+        old_center = self.rect.center
+        self.image = pygame.transform.rotate(self.image_orig, self.rot_angle)
         self.rect = self.image.get_rect()
-        pygame.draw.circle(self.image, WHITE, self.rect.center, self.radius)
-        self.image.set_colorkey(BLACK)
-        print("new Agent rect is :"+str(self.rect))
-        self.rect.center = pos
-        self.speedx = 0
-        self.speedy = 0
+        self.rect.center = old_center
 
-    def update(self):
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
+    def layEgg(self):# determine size from self.traits
+        egg = Agent(self.genes, self.eggSizeFactor, self.rect.center, )
+        all_sprites.add(egg)
+        agents.add(egg)
+
+    def kill(self):
+        pass
+
+    def accelerate(self):
+        # if self.energy
+        pass
     
-    def mature(self):
-        pass
+# class Egg(pygame.sprite.Sprite):
+#     def __init__(self, genes, size, pos, yolk):
+#         pygame.sprite.Sprite.__init__(self)
+#         self.brain = genes[0]
+#         self.traits = genes[1:]
+#         self.radius = size
+#         # based on size, determines max posible yolk energy storage. volumetric rounded and reduced by an amount dictated by other factors.... I'm so tired.
+#         self.yolk = yolk# I have none.
+#         self.hullStrength = self.traits[2] * 12
 
-    def hatch(self):
-        pass
+#         self.image = pygame.Surface((self.radius*2, self.radius*2))
+#         self.rect = self.image.get_rect()
+#         pygame.draw.circle(self.image, WHITE, self.rect.center, self.radius)
+#         self.image.set_colorkey(BLACK)
+#         print("new Agent rect is :"+str(self.rect))
+#         self.rect.center = pos
+#         self.speedx = 0
+#         self.speedy = 0
+
+#     def update(self):
+#         self.rect.x += self.speedx
+#         self.rect.y += self.speedy
+    
+#     def mature(self):
+#         pass
+
+#     def hatch(self):
+#         pass
 
 class Food(pygame.sprite.Sprite):
     def __init__(self, pos):
