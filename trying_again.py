@@ -103,43 +103,74 @@ class Agent(pygame.sprite.Sprite):
         self.image_orig = pygame.Surface((self.radius*2, self.radius*2))
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
-        
         self.rect = self.image.get_rect()
         pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
         self.rect.center = pos
         print("new Agent rect is :"+str(self.rect)+" and "+str(self.rect.center))
         self.speedx = 0
         self.speedy = 0
-        self.rot_angle = 0
+        self.rot_angle = 0# of 359
+        self.rot_vel = 0
 
     def update(self):
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
+        self.rect.x += self.speedx# x position
+        self.rect.y += self.speedy# y position
+        old_center = self.rect.center# fix sprite angle
+        self.image = pygame.transform.rotate(self.image_orig, self.rot_angle)# make a new copy of the original image rotated by current angle and set as self.image
+        self.rect = self.image.get_rect()# fix the Rect
+        self.rect.center = old_center# keep it in place
 
-    def useEnergy(self, a):
-        energy_auditor = 0
-        numberCrunching = 
+    def useEnergy(self) -> bool:
+        if self.energy >= 1:
+            self.energy -= 1
+            return True
+        else:# Energy is Zero, nothing removed
+            return False
+
+    def rotate(self, rot_force:"float"):# a float between -1 and 1
+        tr = 0
+        numberCrunching = abs(rot_force) % 1
         if numberCrunching < 0.695 and numberCrunching > 0.358:
-            energy_auditor += 1
+            tr += 1
+        
+        for i in range(int(rot_force)/36):##### Stop this madness, brother...
 
-    def rotate(self, rot_speed:"float"):
-        self.useEnergy(abs(rot_speed) % 1)
-        self.rot_angle = (self.rot_angle + rot_speed) % 360
-        old_center = self.rect.center
-        self.image = pygame.transform.rotate(self.image_orig, self.rot_angle)
-        self.rect = self.image.get_rect()
-        self.rect.center = old_center
+
+
+
+
+
+
+            #####
+
+
+
+
+
+
+
+
+            pass
+        def calcolo():
+            n = rot_force % 1
+            output = self.rot_angle + n % 360
+            return output
+
+
+
+        self.rot_angle = calcolo()
+
+
+
+
 
     def layEgg(self):# determine size from self.traits
         egg = Agent(self.genes, self.eggSizeFactor, self.rect.center, )
         all_sprites.add(egg)
         agents.add(egg)
 
-    def kill(self):
-        pass
 
     def accelerate(self):
-        # if self.energy
         pass
     
 # class Egg(pygame.sprite.Sprite):
@@ -211,7 +242,6 @@ class Food(pygame.sprite.Sprite):
 # for img in mob_list:
 #     mob_images.append(pygame.image.load(path.join(img_dir, img)).convert())
 
-
 # Game loop
 running = True
 while running:
@@ -244,6 +274,8 @@ while running:
                     debugHUDtoggle = False
                 else:
                     debugHUDtoggle = True
+    # Check collisions
+
 
     # Update
     if not pauseToggle:
