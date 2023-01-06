@@ -1,12 +1,14 @@
 # V Preinfdev0.3
 # 
 # # physicalTraits = [
-#       brainWiring: list of neuralConnections
-#       brain_startingConnections: int,
+#       brainWiring: list[neuralConnections],
+#       brain_startingConnections: list[neuralConnections],
 #       eggSize: int,
 #       eggshellThickness: int
 #       yolkEnergy: int,
-#       size: int
+#       size: int,
+#       rotStrMult: int,
+#       moveStrMult: int
 #       so on...
 # 
 # lifeStages = ["egg", "hatchling", "mature", "elder"]
@@ -68,6 +70,7 @@ gridHeight = 10
 WIDTH = cellSize * gridWidth
 HEIGHT = cellSize * gridHeight
 FPS = 60
+FRICTION = 0.94
 
 # define colors
 WHITE = (255, 255, 255)
@@ -92,12 +95,14 @@ foods = pygame.sprite.Group()
 
 # Classes
 class Agent(pygame.sprite.Sprite):
-    def __init__(self, genes, pos):
+    def __init__(self, genes, pos, yolk:"float", eggshellThickness):
         pygame.sprite.Sprite.__init__(self)
         self.brain = genes[0] 
         self.traits = genes[1]
-        self.lifeStage = 0
-        self.energy = 0
+        self.lifeStage = 0# when spawned in at lifestage zero
+        self.vitality = 10
+        self.energy = yolk # energy is equivalent to yolk energy bestowed by parent
+        self.defense = eggshellThickness
         
         self.radius = self.traits[4]*3
         self.image_orig = pygame.Surface((self.radius*2, self.radius*2))
@@ -106,59 +111,45 @@ class Agent(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
         self.rect.center = pos
-        print("new Agent rect is :"+str(self.rect)+" and "+str(self.rect.center))
+        print("new Agent rect is :"+str(self.rect)+" centered on "+str(self.rect.center))
         self.speedx = 0
         self.speedy = 0
         self.rot_angle = 0# of 359
         self.rot_vel = 0
 
     def update(self):
-        self.rect.x += self.speedx# x position
-        self.rect.y += self.speedy# y position
+        self.speedx *= FRICTION
+        self.speedy *= FRICTION
+        self.rot_vel *= FRICTION * (self.radius - 1)
+        self.rect.x = self.rect.x + self.speedx
+        self.rect.y = self.rect.y + self.speedy
+        self.rot_angle += self.rot_vel
         old_center = self.rect.center# fix sprite angle
         self.image = pygame.transform.rotate(self.image_orig, self.rot_angle)# make a new copy of the original image rotated by current angle and set as self.image
         self.rect = self.image.get_rect()# fix the Rect
         self.rect.center = old_center# keep it in place
 
-    def useEnergy(self) -> bool:
-        if self.energy >= 1:
-            self.energy -= 1
-            return True
-        else:# Energy is Zero, nothing removed
-            return False
-
-    def rotate(self, rot_force:"float"):# a float between -1 and 1
-        tr = 0
-        numberCrunching = abs(rot_force) % 1
-        if numberCrunching < 0.695 and numberCrunching > 0.358:
-            tr += 1
-        
-        for i in range(int(rot_force)/36):##### Stop this madness, brother...
-
-
-
-
-
-
-
-            #####
-
-
-
-
-
-
-
-
+    def useEnergy(self, amount):
+        if self.energy >= amount:
+            self.energy -= amount
+        else:# Energy is Not enough, nothing removed
+            # take it from life instead
+            # but use the energy you do have to not take as much damage
             pass
+
+    def rotate(self, rot_force:"float"):# OUT: a float between -1 and 1
+        # SO, it's trying to rotate at a certain intensity. Am I calculating resistance? no.
+        # calculate how much energy it takes to rotate the requested amount
+        # reduce energy as much as possible, returning the remainder
+        # set actual rotation based on used energy
+        
+        numberCrunching = abs(rot_force)
         def calcolo():
-            n = rot_force % 1
-            output = self.rot_angle + n % 360
-            return output
+            return self.rot_angle + rot_force % 360
 
 
 
-        self.rot_angle = calcolo()
+        self.rot_speed = calcolo()
 
 
 
