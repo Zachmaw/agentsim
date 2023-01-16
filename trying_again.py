@@ -115,15 +115,15 @@ class Agent(pygame.sprite.Sprite):
         self.speedx = 0
         self.speedy = 0
         self.rot_angle = 0# of 359
-        self.rot_vel = 0
+        self.rot_speed = 0
 
     def update(self):
         self.speedx *= FRICTION
         self.speedy *= FRICTION
-        self.rot_vel *= FRICTION * (self.radius - 1)
+        self.rot_speed *= FRICTION * (self.radius - 1)
         self.rect.x = self.rect.x + self.speedx
         self.rect.y = self.rect.y + self.speedy
-        self.rot_angle += self.rot_vel
+        self.rot_angle += self.rot_speed
         old_center = self.rect.center# fix sprite angle
         self.image = pygame.transform.rotate(self.image_orig, self.rot_angle)# make a new copy of the original image rotated by current angle and set as self.image
         self.rect = self.image.get_rect()# fix the Rect
@@ -133,9 +133,9 @@ class Agent(pygame.sprite.Sprite):
         if self.energy >= amount:
             self.energy -= amount
         else:# Energy is Not enough, nothing removed
-            # take it from life instead
-            # but use the energy you do have to not take as much damage
-            pass
+            amount -= self.energy# but use the energy you do have to not take as much damage
+            self.energy = 0
+            self.vitality -= amount# take it from life instead
 
     def rotate(self, rot_force:"float"):# OUT: a float between -1 and 1
         # SO, it's trying to rotate at a certain intensity. Am I calculating resistance? no.
@@ -149,7 +149,7 @@ class Agent(pygame.sprite.Sprite):
 
 
 
-        self.rot_speed = calcolo()
+        self.rot_speed += rot_force * self.traits[]
 
 
 
