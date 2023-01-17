@@ -1,4 +1,4 @@
-# V Preinfdev0.3
+# V Preinfdev0.4
 # 
 # # physicalTraits = [
 #       brainWiring: list[neuralConnections],
@@ -55,6 +55,19 @@ def buildBackdrop(size:"pygame.surface._Coordinate"):
             pygame.draw.rect(backdrop, c, pygame.Rect(x, y, x+cellSize, y+cellSize))
     return backdrop
 
+def genesInit():
+    genes = {
+      "brainWiring": list[neuralConnections],# each has an energy cost directly corelating to connection absolute strength
+      "brain_startingConnections": list[neuralConnections],# max len = 
+      "eggSize": int,# ???
+      "eggshellThickness": 0,# increases material cost to make egg and the Egg's deffense
+      "yolkEnergy": 1,
+      "sizeAdult": 1,
+      "rotStrMult": 1,
+      "moveStrMult": 1
+    }
+    return genes
+
 # Switches
 pauseToggle = False
 debugHUDtoggle = False
@@ -63,6 +76,7 @@ mainLoop = True
 # counters
 simRuntime = 0
 simEnergy = 0
+defaultYolk = 10
 
 cellSize = 32
 gridWidth = 10
@@ -142,14 +156,10 @@ class Agent(pygame.sprite.Sprite):
         # calculate how much energy it takes to rotate the requested amount
         # reduce energy as much as possible, returning the remainder
         # set actual rotation based on used energy
-        
-        numberCrunching = abs(rot_force)
-        def calcolo():
-            return self.rot_angle + rot_force % 360
 
 
 
-        self.rot_speed += rot_force * self.traits[]
+        self.rot_speed += rot_force * self.traits[rotStr]
 
 
 
@@ -246,7 +256,10 @@ while running:
             mousePos = pygame.mouse.get_pos()
             print(mousePos)
             if any(shiftKeys):### spawn an Agent
-                pass
+                tempAgentVar = Agent(genesInit(), mousePos, defaultYolk, 0)#####
+                all_sprites.add(tempAgentVar)
+                agents.add(tempAgentVar)
+                simEnergy += defaultYolk
             else:# spawn a food
                 tempFoodVar = Food(mousePos)
                 all_sprites.add(tempFoodVar)
