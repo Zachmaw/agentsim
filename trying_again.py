@@ -1,5 +1,7 @@
 # V Preinfdev0.4
-# 
+# Before I can step that up
+# using your brain needs to cost slightly more than having it.
+
 # # physicalTraits = [
 #       brainWiring: list[neuralConnections],
 #       brain_startingConnections: list[neuralConnections],
@@ -15,11 +17,20 @@
 
 import pygame
 from os import path
+from basicData import *
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from keras.preprocessing.sequence import TimeseriesGenerator
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
 
 img_dir = path.join(path.dirname(__file__), 'img')
 
-# Got this incredibly helpful function from https://stackoverflow.com/questions/42014195/rendering-text-with-multiple-lines-in-pygame
+
 def blit_text(surface, text, pos, font, color=pygame.Color("black")):
+    # Got this incredibly helpful function from https://stackoverflow.com/questions/42014195/rendering-text-with-multiple-lines-in-pygame
     words = [word.split(" ") for word in text.splitlines()]  # 2D array where each row is a list of words.
     space = font.size(" ")[0]  # The width of a space.
     max_width, max_height = surface.get_size()
@@ -55,45 +66,17 @@ def buildBackdrop(size:"pygame.surface._Coordinate"):
             pygame.draw.rect(backdrop, c, pygame.Rect(x, y, x+cellSize, y+cellSize))
     return backdrop
 
-def genesInit():
+def genesDefault():
     genes = {
-      "brainWiring": list[neuralConnections],# each has an energy cost directly corelating to connection absolute strength
-      "brain_startingConnections": list[neuralConnections],# max len = 
-      "eggSize": int,# ???
-      "eggshellThickness": 0,# increases material cost to make egg and the Egg's deffense
-      "yolkEnergy": 1,
-      "sizeAdult": 1,
-      "rotStrMult": 1,
-      "moveStrMult": 1
+      "brainWiring": list[neuralConnection],# each has energy cost = abs(connectionStrength)(/2 while not in use)
+      "brain_startingConnections": list[neuralConnection],# no max len, per neuron/synapse cost trippled.
+      "eggshell": 0,# multiplier for material cost and Egg deffense
+      "yolk": 0,# 
+      "size": 1,
+      "rotStr": 1,
+      "moveStr": 1
     }
     return genes
-
-# Switches
-pauseToggle = False
-debugHUDtoggle = False
-mainLoop = True
-
-# counters
-simRuntime = 0
-simEnergy = 0
-defaultYolk = 10
-
-cellSize = 32
-gridWidth = 10
-gridHeight = 10
-WIDTH = cellSize * gridWidth
-HEIGHT = cellSize * gridHeight
-FPS = 60
-FRICTION = 0.94
-
-# define colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
-
 
 # initialize pygame and create window
 pygame.init()
@@ -103,22 +86,34 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("AgentSim")
 clock = pygame.time.Clock()
 background = buildBackdrop(screen.get_rect().size)
+# define generator
+n_input = 3
+n_features = 1
+generator = TimeseriesGenerator(scaled_train, scaled_train, length=n_input, batch_size=1)
+# define groups
 all_sprites = pygame.sprite.Group()
 agents = pygame.sprite.Group()
 foods = pygame.sprite.Group()
+# define model
+model = Sequential()
+model.add(LSTM(100, activation='relu', input_shape=(n_input, n_features)))          # here.
+model.add(Dense(1))
+model.compile(optimizer='adam', loss='mse')
+
+# so a default brain..... I'm so confused about the dimentionallity of output space? Right up
+# every brain has the same number of inputs and outputs, yes?
 
 # Classes
 class Agent(pygame.sprite.Sprite):
-    def __init__(self, genes, pos, yolk:"float", eggshellThickness):
+    def __init__(self, genes, pos, yolk:"float", eggshell):
         pygame.sprite.Sprite.__init__(self)
         self.brain = genes[0] 
         self.traits = genes[1]
-        self.lifeStage = 0# when spawned in at lifestage zero
+        self.lifeStage = 0# when spawned in at lifestage zero, am egg.
         self.vitality = 10
         self.energy = yolk # energy is equivalent to yolk energy bestowed by parent
-        self.defense = eggshellThickness
-        
-        self.radius = self.traits[4]*3
+        self.defense = eggshell
+        self.radius = self.traits["eggSize"]*3
         self.image_orig = pygame.Surface((self.radius*2, self.radius*2))
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
@@ -163,9 +158,13 @@ class Agent(pygame.sprite.Sprite):
 
 
 
+    def buildEgg(self):# determine size from self.traits
+        # cost energy for yolk
+        self.useEnergy(self.traits["yolk"])
+        # cost material for shell
+        pass
 
-
-    def layEgg(self):# determine size from self.traits
+    def layEgg(self):
         egg = Agent(self.genes, self.eggSizeFactor, self.rect.center, )
         all_sprites.add(egg)
         agents.add(egg)
@@ -174,6 +173,11 @@ class Agent(pygame.sprite.Sprite):
     def accelerate(self):
         pass
     
+
+class neuralConnection():
+    def __init__(self):
+        pass
+
 # class Egg(pygame.sprite.Sprite):
 #     def __init__(self, genes, size, pos, yolk):
 #         pygame.sprite.Sprite.__init__(self)
@@ -242,6 +246,85 @@ class Food(pygame.sprite.Sprite):
 # mob_list = ['fillermob1.png', 'fillermob2.png']
 # for img in mob_list:
 #     mob_images.append(pygame.image.load(path.join(img_dir, img)).convert())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+X,y = generator[0]
+print(f'Given the Array: \n{X.flatten()}')
+print(f'Predict this y: \n {y}')
+
+X.shape
+
+# We do the same thing, but now instead for 12 months
+n_input = 12
+generator = TimeseriesGenerator(scaled_train, scaled_train, length=n_input, batch_size=1)
+
+
+model.summary()
+
+# fit model
+model.fit(generator,epochs=50)
+
+loss_per_epoch = model.history.history['loss']
+plt.plot(range(len(loss_per_epoch)),loss_per_epoch)
+
+last_train_batch = scaled_train[-12:]
+
+last_train_batch = last_train_batch.reshape((1, n_input, n_features))
+
+model.predict(last_train_batch)
+
+scaled_test[0]
+
+test_predictions = []
+
+first_eval_batch = scaled_train[-n_input:]
+current_batch = first_eval_batch.reshape((1, n_input, n_features))
+
+for i in range(len(test)):
+    
+    # get the prediction value for the first batch
+    current_pred = model.predict(current_batch)[0]
+    
+    # append the prediction into the array
+    test_predictions.append(current_pred) 
+    
+    # use the prediction to update the batch and remove the first value
+    current_batch = np.append(current_batch[:,1:,:],[[current_pred]],axis=1)
+
+test_predictions
+
+test.head()
+
+test['Predictions'] = scaler.inverse_transform(test_predictions)
+
+test.plot(figsize=(14,5))
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Game loop
 running = True
