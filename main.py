@@ -17,7 +17,7 @@
 
 import pygame
 from os import path
-from basicData import *
+from defaults import *
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -103,17 +103,37 @@ model.compile(optimizer='adam', loss='mse')
 # so a default brain..... I'm so confused about the dimentionallity of output space? Right up
 # every brain has the same number of inputs and outputs, yes?
 
+# each input neuron has a range of 0-1, weights can be anywhere -4 to 4, and output neurons expect -1 to 1.
+
+# # physicalTraits = [
+#       brainWiring: list[neuralConnections],
+#       brain_startingConnections: list[neuralConnections],
+#       eggshellThickness: int
+#       yolkEnergy: int,
+#       rotStrMult: int,
+#       moveStrMult: int
+#       so on...
+# 
 # Classes
+class Brain():
+    def __init__(self, genes):
+        self.hatchlingStage = []
+        self.completedStructure = []
+        for connection in genes[1]:
+            self.hatchlingStage.append(connection)
+        for connection in genes[0]:
+            self.completedStructure.append(connection)# so what that does is builds the brain how it will be , based on solely genetic factors, at the begining of adulthood. Ofc experience should come into play, yet to implement.
+
 class Agent(pygame.sprite.Sprite):
-    def __init__(self, genes, pos, yolk:"float", eggshell):
+    def __init__(self, genes, pos, yolk:"int", eggshell:"int"):
         pygame.sprite.Sprite.__init__(self)
-        self.brain = genes[0] 
-        self.traits = genes[1]
-        self.lifeStage = 0# when spawned in at lifestage zero, am egg.
+        self.brain = Brain(genes[:2])### initialize brain from genes.
+        self.traits = genes[2:]
+        self.lifeStage = 0# when spawned in at lifestage zero, am egg. child, adult, elder.
         self.vitality = 10
-        self.energy = yolk # energy is equivalent to yolk energy bestowed by parent
+        self.energy = yolk # energy is equivalent to yolk energy bestowed by parent.
         self.defense = eggshell
-        self.radius = self.traits["eggSize"]*3
+        self.radius = eggshell/2 + yolk/3
         self.image_orig = pygame.Surface((self.radius*2, self.radius*2))
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
@@ -129,7 +149,7 @@ class Agent(pygame.sprite.Sprite):
     def update(self):
         self.speedx *= FRICTION
         self.speedy *= FRICTION
-        self.rot_speed *= FRICTION * (self.radius - 1)
+        self.rot_speed *= FRICTION * (self.radius * 0.85)
         self.rect.x = self.rect.x + self.speedx
         self.rect.y = self.rect.y + self.speedy
         self.rot_angle += self.rot_speed
@@ -145,6 +165,17 @@ class Agent(pygame.sprite.Sprite):
             amount -= self.energy# but use the energy you do have to not take as much damage
             self.energy = 0
             self.vitality -= amount# take it from life instead
+
+    def ageUp(self):
+        if self.lifeStage == 0:
+            pass
+            # make self.defence dynamically related to self.armor?
+        self.lifeStage += 1
+        ### so the different things
+        # egg
+        # child
+        # adult
+        # elder
 
     def rotate(self, rot_force:"float"):# OUT: a float between -1 and 1
         # SO, it's trying to rotate at a certain intensity. Am I calculating resistance? no.
@@ -262,57 +293,57 @@ class Food(pygame.sprite.Sprite):
 
 
 
+# WHY DIDNT I LEAVE ANY NOTES FOR WHAT THIS WAS ABOUT?!
+# X,y = generator[0]
+# print(f'Given the Array: \n{X.flatten()}')
+# print(f'Predict this y: \n {y}')
 
-X,y = generator[0]
-print(f'Given the Array: \n{X.flatten()}')
-print(f'Predict this y: \n {y}')
+# X.shape
 
-X.shape
-
-# We do the same thing, but now instead for 12 months
-n_input = 12
-generator = TimeseriesGenerator(scaled_train, scaled_train, length=n_input, batch_size=1)
+# # We do the same thing, but now instead for 12 months
+# n_input = 12
+# generator = TimeseriesGenerator(scaled_train, scaled_train, length=n_input, batch_size=1)
 
 
-model.summary()
+# model.summary()
 
-# fit model
-model.fit(generator,epochs=50)
+# # fit model
+# model.fit(generator,epochs=50)
 
-loss_per_epoch = model.history.history['loss']
-plt.plot(range(len(loss_per_epoch)),loss_per_epoch)
+# loss_per_epoch = model.history.history['loss']
+# plt.plot(range(len(loss_per_epoch)),loss_per_epoch)
 
-last_train_batch = scaled_train[-12:]
+# last_train_batch = scaled_train[-12:]
 
-last_train_batch = last_train_batch.reshape((1, n_input, n_features))
+# last_train_batch = last_train_batch.reshape((1, n_input, n_features))
 
-model.predict(last_train_batch)
+# model.predict(last_train_batch)
 
-scaled_test[0]
+# scaled_test[0]
 
-test_predictions = []
+# test_predictions = []
 
-first_eval_batch = scaled_train[-n_input:]
-current_batch = first_eval_batch.reshape((1, n_input, n_features))
+# first_eval_batch = scaled_train[-n_input:]
+# current_batch = first_eval_batch.reshape((1, n_input, n_features))
 
-for i in range(len(test)):
+# for i in range(len(test)):
     
-    # get the prediction value for the first batch
-    current_pred = model.predict(current_batch)[0]
+#     # get the prediction value for the first batch
+#     current_pred = model.predict(current_batch)[0]
     
-    # append the prediction into the array
-    test_predictions.append(current_pred) 
+#     # append the prediction into the array
+#     test_predictions.append(current_pred) 
     
-    # use the prediction to update the batch and remove the first value
-    current_batch = np.append(current_batch[:,1:,:],[[current_pred]],axis=1)
+#     # use the prediction to update the batch and remove the first value
+#     current_batch = np.append(current_batch[:,1:,:],[[current_pred]],axis=1)
 
-test_predictions
+# test_predictions
 
-test.head()
+# test.head()
 
-test['Predictions'] = scaler.inverse_transform(test_predictions)
+# test['Predictions'] = scaler.inverse_transform(test_predictions)
 
-test.plot(figsize=(14,5))
+# test.plot(figsize=(14,5))
 
 
 
